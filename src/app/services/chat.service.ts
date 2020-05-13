@@ -1,66 +1,90 @@
 import { Injectable } from '@angular/core';
-import { AngularFireDatabase } from 'angularfire2/database';
-import { AngularFireList } from 'angularfire2/database';
-
+import { AngularFireDatabase, AngularFireList, AngularFireObject } from 'angularfire2/database';
 import { AngularFireAuth } from 'angularfire2/auth';
 import { Observable } from 'rxjs';
-import { AuthService } from '../services/auth.service';
+import { AuthService } from './auth.service';
 import * as firebase from 'firebase/app';
-
-
 import { ChatMessage } from '../models/chat-message.model';
+// import { FirebaseListObservable } from 'angularfire2/database-deprecated';
 
-@Injectable({
-  providedIn: 'root'
-})
+@Injectable()
 export class ChatService {
-
-  user: firebase.User;
+  user: any;
   chatMessages: AngularFireList<ChatMessage>;
   chatMessage: ChatMessage;
-  // userName: Observable<string>;
+  userName: Observable<string>;
+  var1$;
+  var2$;
 
-  userName: string;
+  constructor(
+    private db: AngularFireDatabase,
+    private afAuth: AngularFireAuth,
+  ) {
+    this.afAuth.authState.subscribe(auth => {
+      if (auth != undefined && auth != null) {
+        this.user = auth;
+      }
 
-  constructor(private db: AngularFireDatabase, private afAuth: AngularFireAuth) {
-    // this.afAuth.authState.subscribe(auth=>{
-    //   if(auth !== undefined && auth!== null){
-    //
-    //     this.user = auth;
-    //   }
-    // })
+      this.getUser().forEach((u) => {
+        this.userName = u[0];
+        //    console.log(this.userName);
+      });
 
+    });
+  }
+
+  getUser() {
+    const userId = this.user.uid;
+    //console.log(userId);
+    const path = `users/${userId}`;
+    this.db.list('users/userId')
+    const itemsRef: AngularFireList<ChatMessage> = this.db.list(path);
+    this.var1$ = itemsRef.snapshotChanges();
+    this.var2$ = itemsRef.valueChanges();
+
+    return this.var2$;
+  }
+
+
+  getUsers() {
+    const path = `users/`;
+    const itemsRef: AngularFireList<ChatMessage> = this.db.list(path);
+    this.var1$ = itemsRef.snapshotChanges();
+    this.var2$ = itemsRef.valueChanges();
+
+    return this.var2$;
+    //return this.db.list(path);
   }
 
   sendMessage(msg: string) {
-    const timestamp = this.getTimeStamp();
-    // const email = this.user.email;
-    const email = "test@example.com"
+    const timeStamp = this.getTimeStamp();
+    const email = this.user.email;
     this.chatMessages = this.getMessages();
-    this.chatMessages.push({
+
+    var message = {
       message: msg,
-      timeSent: timestamp,
-      userName: 'test-user',
-      // userName: this.userName
-      email: email });
-    console.log("nfdjncdjc");
+      timeSent: timeStamp,
+      userName: this.userName,
+      email: email
+    };
+    const item = this.db.list('/messages');
+    item.push(message);
   }
 
   getMessages(): AngularFireList<ChatMessage> {
-    return this.db.list('messages',  ref => ref.orderByKey().limitToLast(25));
+    // query to create our message feed binding
+    const itemsRef: AngularFireList<ChatMessage> = this.db.list('/messages');
+    this.var1$ = itemsRef.snapshotChanges();
+    this.var2$ = itemsRef.valueChanges();
+    return this.var2$;
   }
 
-  getTimeStamp(){
+  getTimeStamp() {
     const now = new Date();
-    const date = now.getUTCFullYear() + '/' +
-      (now.getUTCMonth() + 1) + '/' +
-      now.getUTCDate();
-    const time = now.getUTCHours() + ':' +
-      now.getUTCMinutes() + ':' +
-      now.getUTCSeconds();
-
+    const date = now.getUTCFullYear() + '/' + (now.getUTCMonth() + 1) + '/' + now.getUTCDate();
+    const time = now.getUTCHours() + ':' + now.getUTCMinutes() + ':' + now.getUTCSeconds();
     return (date + ' ' + time);
   }
 
-
 }
+

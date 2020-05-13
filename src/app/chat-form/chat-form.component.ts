@@ -1,5 +1,6 @@
 import { Component, OnInit } from '@angular/core';
-import {ChatService} from "../services/chat.service";
+import { ChatService } from '../services/chat.service';
+import { PickerModule } from '@ctrl/ngx-emoji-mart';
 
 @Component({
   selector: 'app-chat-form',
@@ -7,7 +8,6 @@ import {ChatService} from "../services/chat.service";
   styleUrls: ['./chat-form.component.css']
 })
 export class ChatFormComponent implements OnInit {
-
   message: string;
 
   constructor(private chat: ChatService) { }
@@ -19,12 +19,9 @@ export class ChatFormComponent implements OnInit {
     this.chat.sendMessage(this.message);
     this.message = '';
   }
-
-
-
-  handleSubmit() {
-
+  handleSubmit(event) {
+    if (event.keyCode == 13) {
       this.send();
-
+    }
   }
 }
